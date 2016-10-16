@@ -9,16 +9,16 @@ let hex = "49276d206b696c6c696e6720796f757220627261696e206c696b65206120706f69736
 // should produce...
 let expectedBase64 = "SSdtIGtpbGxpbmcgeW91ciBicmFpbiBsaWtlIGEgcG9pc29ub3VzIG11c2hyb29t"
 
-extension String {
-    var asciiArray: [UInt32] {
-        return unicodeScalars.filter{ $0.isASCII }.map{ $0.value }
+// given a byte, gives 8-character string representation (for debugging)
+private func byteString(_ byte: UInt8) -> String {
+    var str = String(byte, radix: 2)
+    let length = str.characters.count
+    
+    for _ in 0..<(8 - length) {
+        str = "0" + str
     }
-}
-
-extension Character {
-    var asciiValue: UInt32? {
-        return String(self).unicodeScalars.filter{ $0.isASCII }.first?.value
-    }
+    
+    return str
 }
 
 func hexToByte(hexStr: String) -> UInt8 {
@@ -67,16 +67,17 @@ func hexStringInPairs(hexStr: String) -> [String] {
     
     func characterPairsIn(string: String) -> [String] {
         var i = string.startIndex
-        var j = string.index(i, offsetBy: 2)
+        let last = string.index(string.endIndex, offsetBy: -2)
         var result = [String]()
         
-        while j < string.endIndex {
+        while i <= last {
+            let j = string.index(i, offsetBy: 2)
+            
             let range = Range(uncheckedBounds: (lower: i, upper: j))
             let substring = string[range]
             result.append(substring)
             
             i = j
-            j = string.index(j, offsetBy: 2)
         }
         
         return result
@@ -88,6 +89,10 @@ func hexStringInPairs(hexStr: String) -> [String] {
 }
 
 let pairs = hexStringInPairs(hexStr: hex)
+
+func hexDecode(_ str: String) -> [UInt8] {
+    return hexStringInPairs(hexStr: str).map(hexToByte)
+}
 
 func bytesToBase64(input: [UInt8]) -> String {
     let codes = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/="
@@ -108,8 +113,9 @@ func bytesToBase64(input: [UInt8]) -> String {
     let bytes = adjustedBytes(bytes: input)
     for index in stride(from: 0, to: bytes.count, by: 3) {
         let byte1 = bytes[index]
-        let char1 = (byte1 & 0xfc) >> 2
-        characters.append(codeAtIndex(index: char1))
+        let idx1 = (byte1 & 0xfc) >> 2
+        let code1 = codeAtIndex(index: idx1)
+        characters.append(code1)
         
         guard index + 1 < bytes.count else {
             characters.append("=")
@@ -118,8 +124,9 @@ func bytesToBase64(input: [UInt8]) -> String {
         }
         
         let byte2 = bytes[index+1]
-        let char2 = ((byte1 & 0x03) << 4) + ((byte2 & 0xf0) >> 4)
-        characters.append(codeAtIndex(index: char2))
+        let idx2 = ((byte1 & 0x03) << 4) + ((byte2 & 0xf0) >> 4)
+        let code2 = codeAtIndex(index: idx2)
+        characters.append(code2)
         
         guard index + 2 < bytes.count else {
             characters.append("=")
@@ -127,13 +134,13 @@ func bytesToBase64(input: [UInt8]) -> String {
         }
         
         let byte3 = bytes[index+2]
-        let char3 = ((byte2 & 0x0f) << 2) + ((byte3 & 0xc0) >> 6)
-        characters.append(codeAtIndex(index: char3))
+        let idx3 = ((byte2 & 0x0f) << 2) + ((byte3 & 0xc0) >> 6)
+        let code3 = codeAtIndex(index: idx3)
+        characters.append(code3)
         
-        print("bytes are \(String(byte1, radix: 2)), \(String(byte2, radix: 2)), \(String(byte3, radix: 2))")
-        
-        let char4 = (byte3 & 0x3f)
-        characters.append(codeAtIndex(index: char4))
+        let idx4 = (byte3 & 0x3f)
+        let code4 = codeAtIndex(index: idx4)
+        characters.append(code4)
     }
     
     let base64 = characters.map { String($0) }.joined()
@@ -141,7 +148,7 @@ func bytesToBase64(input: [UInt8]) -> String {
     return base64
 }
 
-let result = bytesToBase64(input: hexStringInPairs(hexStr: hex).map(hexToByte))
+let result = bytesToBase64(input: hexDecode(hex))
 
 print("Expected: \(expectedBase64)")
 print("Got:      \(result)")
