@@ -19,7 +19,7 @@ makeEvenLength s
 {-hexStrInPairs (c1:c2:s) = [[c1] ++ [c2]] ++ hexStrInPairs s-}
 
 hexStrInPairs :: String -> [String]
-hexStrInPairs s = case isEvenLength s of false -> makePairs $ makeEvenLength s
+hexStrInPairs s = case isEvenLength s of False -> makePairs $ makeEvenLength s
                                          _ -> makePairs s
                        where makePairs (c1:c2:[]) = [[c1] ++ [c2]]
                              makePairs (c1:c2:s) = [[c1] ++ [c2]] ++ makePairs s
@@ -27,7 +27,7 @@ hexStrInPairs s = case isEvenLength s of false -> makePairs $ makeEvenLength s
 -- Converts a hex string representation of a byte into ByteString
 byteStrToBytes :: String -> Maybe B.ByteString
 byteStrToBytes str = case unhex str of Nothing -> Nothing
-                                      Just s -> Just (C8.pack s)
+                                       Just s -> Just (C8.pack s)
 
 bytesToStr :: B.ByteString -> String
 bytesToStr = map (C.chr . fromEnum) . B.unpack
